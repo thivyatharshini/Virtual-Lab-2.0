@@ -45,20 +45,31 @@ class DraggableElement:
         self.image = pygame.transform.scale(self.image,(width,height))
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)    # Pygame rectangle defining the element's position and size
-
+        self.permittivity=1
+        
     def draw(self, screen):
         screen.blit(self.image, self.rect)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.rect.collidepoint(event.pos):
+                if self.image == d1.image:
+                    self.permittivity=1.6 #Paper
+                elif self.image == d2.image:
+                    self.permittivity= 4.5  # Quartz
+                elif self.image == d3.image:
+                    self.permittivity=58  #Mica
+
                 duplicate = DraggableDuplicate(
                         self.rect.x + 10,  # Offset the duplicate's position
                         self.rect.y + 10,  # Offset the duplicate's position
-                        self.image)
+                        self.image,self.permittivity)
                 duplicate_dlist.append(duplicate)
+                value.append(self.permittivity)
+
 class DraggableDuplicate:
-    def __init__(self, x, y, image):
+    def __init__(self, x, y, image,permittivity):
+        self.permittivity=permittivity
         self.image = image
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)    # Pygame rectangle defining the element's position and size
@@ -82,6 +93,7 @@ class DraggableDuplicate:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
             if  self.rect.collidepoint(event.pos):
                 duplicate_dlist.remove(self)
+                value.remove(self.permittivity)
                 del self
     def fix_position_and_size(self, fixed_x, fixed_y, new_width, new_height):
             if self.rect.colliderect(pygame.Rect(fixed_x, fixed_y, new_width, new_height)):
@@ -132,6 +144,9 @@ def draw_screen2():
     exit2.draw(screen)
     for element in duplicate_dlist:
         element.draw(screen)
+    for start,end in wire:
+        pygame.draw.line(screen, (255, 0, 0), start,end, 5)  # Use the color (255, 0, 0) for red
+
     
     text = font2.render("Arrange the Dielectric", True, (255,255,255))
     text_rect = text.get_rect()
@@ -144,11 +159,28 @@ def dielectric_screen():
     screen.blit(bgnd,(40,10))
     for element in dlist:
         element.draw(screen)
+
+def calculate_capacitance(val):
+    length=len(val)
+    re_permittivity=1
+    if length==1:
+        re_permittivity=val[0]
+    elif length==2:
+        re_permittivity=(2*val[0]*val[1])/(val[0]+val[1])
+    elif length==3:
+        re_permittivity=(val[0]*(val[1]+val[2]))/(val[0]+2*(val[1]+val[2]))
+    elif length==4:
+        re_permittivity=((val[0]*val[1])/(val[0]+val[1]))+((val[2]*val[3])/(val[2]+val[3]))
+    capacitance=(8.85*100*re_permittivity)/(10*5)
+    return capacitance
     
     
     
 dlist=[d1,d2,d3]  
-duplicate_dlist=[]  
+duplicate_dlist=[]
+value=[]
+wire=[((240,218),(160,218)),((160,218),(160,346)),((160,346),(326,346)),
+      ((500,218),(570,218)),((570,218),(570,346)),((570,346),(430,346))]  
 open_smallscreen = False
 
     
@@ -161,6 +193,8 @@ while running:
         play.handle_event(event)
         exit2.handle_event(event)
         dielectric.handle_event(event)
+        run.handle_event(event)
+        edit.handle_event(event)
         for element in dlist:
             element.handle_event(event)
         for element in duplicate_dlist:
@@ -174,6 +208,12 @@ while running:
             current_screen = "screen1" 
         if dielectric.clicked :
             open_smallscreen = not open_smallscreen
+        if run.clicked and not edit.clicked:
+            open_smallscreen = False
+            capacitance=calculate_capacitance(value)
+            print(capacitance)
+            
+
     if current_screen == "screen1":
         draw_screen1()
     elif current_screen == "screen2":
@@ -186,8 +226,8 @@ while running:
         yc=[154,154,214,214]
         w=100 if len(duplicate_dlist)==1 else 50
         h=120 if (len(duplicate_dlist)+index) <=3 else 60
-        print(index)
-        element.fix_position_and_size(xc[index], yc[index],w, h)   
-        
+        element.fix_position_and_size(xc[index], yc[index],w, h)  
+     
+       
     
     pygame.display.update()
