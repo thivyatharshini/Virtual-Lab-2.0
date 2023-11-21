@@ -8,6 +8,7 @@ font2 = pygame.font.Font("fonts/Inconsolata.ttf", 40)
 
 running = True
 current_screen = "screen1"
+capacitance=0
 
 
 class Image:
@@ -80,10 +81,7 @@ class DraggableDuplicate:
         self.permittivity = permittivity
         self.image = image
         self.rect = self.image.get_rect()
-        self.rect.topleft = (
-            x,
-            y,
-        )  # Pygame rectangle defining the element's position and size
+        self.rect.topleft = (x,y,)  # Pygame rectangle defining the element's position and size
         self.dragging = False  # Flag to track if the element is being dragged
 
     def update(self, mouse_pos):
@@ -126,6 +124,8 @@ capacitorR = Image(400, 130, "assets/capacitorright.png", 100, 170)
 d1 = DraggableElement(50, 30, "assets/dielectric1.png", 70, 70)
 d2 = DraggableElement(120, 30, "assets/dielectric2.png", 70, 70)
 d3 = DraggableElement(190, 24, "assets/dielectric3.png", 82, 82)
+result= Image(600, 80, "assets/resultplate.png", 250, 200)
+score= Image(575, 230, "assets/scoreplate.png", 260, 200)
 
 
 def draw_screen1():
@@ -152,26 +152,24 @@ def draw_screen2():
     run.draw(screen)
     edit.draw(screen)
     exit2.draw(screen)
-    for element in duplicate_dlist:
-        element.draw(screen)
+    result.draw(screen)
+    score.draw(screen)
     for start, end in wire:
         pygame.draw.line(
             screen, (255, 0, 0), start, end, 5
         )  # Use the color (255, 0, 0) for red
-
-    text = font2.render("Arrange the Dielectric", True, (255, 255, 255))
+    text = font2.render("Arrange The Dielectric", True, (255, 255, 255))
     text_rect = text.get_rect()
     text_rect.center = (390, 60)
     screen.blit(text, text_rect)
-
-
-def dielectric_screen():
-    bgnd = pygame.image.load("assets/dielectric-bgnd.png")
-    bgnd = pygame.transform.scale(bgnd, (300, 100))
-    screen.blit(bgnd, (40, 10))
-    for element in dlist:
+    if open_smallscreen:
+        bgnd = pygame.image.load("assets/dielectric-bgnd.png")
+        bgnd = pygame.transform.scale(bgnd, (300, 100))
+        screen.blit(bgnd, (40, 10))
+        for element in dlist:
+            element.draw(screen)
+    for element in duplicate_dlist:
         element.draw(screen)
-
 
 def calculate_capacitance(val):
     length = len(val)
@@ -226,6 +224,9 @@ while running:
             current_screen = "screen2"
         elif exit2.clicked:
             current_screen = "screen1"
+            duplicate_dlist.clear()
+            value.clear()
+            
         if dielectric.clicked:
             open_smallscreen = not open_smallscreen
         if run.clicked and not edit.clicked:
@@ -237,8 +238,7 @@ while running:
         draw_screen1()
     elif current_screen == "screen2":
         draw_screen2()
-    if open_smallscreen and current_screen == "screen2":
-        dielectric_screen()
+
     for index, element in enumerate(duplicate_dlist):
         element.update(pygame.mouse.get_pos())
         xc = [320, 370, 370, 320]
