@@ -1,14 +1,20 @@
 import pygame
+import time
 
 pygame.init()
 screen = pygame.display.set_mode((800, 500))
 pygame.display.set_caption("Arrange the Dielectric")
 font1 = pygame.font.Font("fonts/Inconsolata.ttf", 80)
 font2 = pygame.font.Font("fonts/Inconsolata.ttf", 40)
+font3 = pygame.font.Font("fonts/Inconsolata.ttf", 20)
 
 running = True
 current_screen = "screen1"
 capacitance=0
+target_value=[28.32,79.65,1026.6,41.78,55.12,147.83,13.98,38.38,89.21]
+iter=0
+highscore=0
+
 
 
 class Image:
@@ -117,15 +123,15 @@ play = ImageButton(200, 250, "assets/play-button.png", 100, 90)
 exit2 = ImageButton(700, 20, "assets/exit-button.png", 90, 70)
 dielectric = ImageButton(20, 100, "assets/dielectric-button.png", 100, 70)
 run = ImageButton(20, 170, "assets/run-button.png", 100, 60)
-edit = ImageButton(20, 230, "assets/edit-button.png", 100, 60)
 battery = Image(290, 330, "assets/battery.png", 200, 150)
 capacitorL = Image(240, 130, "assets/capacitorleft.png", 100, 170)
 capacitorR = Image(400, 130, "assets/capacitorright.png", 100, 170)
-d1 = DraggableElement(50, 30, "assets/dielectric1.png", 70, 70)
-d2 = DraggableElement(120, 30, "assets/dielectric2.png", 70, 70)
-d3 = DraggableElement(190, 24, "assets/dielectric3.png", 82, 82)
+d1 = DraggableElement(50, 20, "assets/dielectric1.png", 70, 70)
+d2 = DraggableElement(150, 20, "assets/dielectric2.png", 70, 70)
+d3 = DraggableElement(250, 14, "assets/dielectric3.png", 82, 82)
 result= Image(600, 80, "assets/resultplate.png", 250, 200)
 score= Image(575, 230, "assets/scoreplate.png", 260, 200)
+instruction= Image(20, 10, "assets/instruction.png", 690, 480)
 
 
 def draw_screen1():
@@ -140,8 +146,17 @@ def draw_screen1():
     text_rect.center = (400 - 10, 250 - 70)
     screen.blit(text, text_rect)
 
+def draw_screen3():
+    bgnd = pygame.image.load("assets/background2.png")
+    bgnd = pygame.transform.scale(bgnd, (800, 500))
+    screen.blit(bgnd, (0, 0))
+    exit2.draw(screen)
+    instruction.draw(screen)
+    
+    
 
 def draw_screen2():
+    
     bgnd = pygame.image.load("assets/background2.png")
     bgnd = pygame.transform.scale((bgnd), (800, 500))
     screen.blit(bgnd, (0, 0))
@@ -150,7 +165,6 @@ def draw_screen2():
     capacitorR.draw(screen)
     dielectric.draw(screen)
     run.draw(screen)
-    edit.draw(screen)
     exit2.draw(screen)
     result.draw(screen)
     score.draw(screen)
@@ -162,14 +176,52 @@ def draw_screen2():
     text_rect = text.get_rect()
     text_rect.center = (390, 60)
     screen.blit(text, text_rect)
+    text = font2.render("Level "+str((iter//3)+1), True, (255, 255, 255))
+    text_rect = text.get_rect()
+    text_rect.center = (390, 100)
+    screen.blit(text, text_rect)
+    printresult()
+    printscore()
+    
+    
+
     if open_smallscreen:
         bgnd = pygame.image.load("assets/dielectric-bgnd.png")
         bgnd = pygame.transform.scale(bgnd, (300, 100))
         screen.blit(bgnd, (40, 10))
+        text = font3.render("Paper       Quartz        Mica", True, (255, 0,0))
+        text_rect = text.get_rect()
+        text_rect.topleft = (65, 85)
+        screen.blit(text, text_rect)
         for element in dlist:
             element.draw(screen)
     for element in duplicate_dlist:
         element.draw(screen)
+def printresult():
+    global iter
+    text = font3.render(str(capacitance)+" pF", True, (255, 0,0))
+    text_rect = text.get_rect()
+    text_rect.center = (715, 210)
+    screen.blit(text, text_rect)
+    if target_value[iter]==capacitance:
+        time.sleep(1)
+        iter+=1
+        
+    text = font3.render(str(target_value[iter])+" pF", True, (255, 0,0))
+    text_rect = text.get_rect()
+    text_rect.center = (715, 165)
+    screen.blit(text, text_rect)
+
+def printscore():
+    text = font3.render(str(highscore), True, (255, 0,0))
+    text_rect = text.get_rect()
+    text_rect.center = (715, 350)
+    screen.blit(text, text_rect)
+    text = font3.render(str(iter), True, (255, 0,0))
+    text_rect = text.get_rect()
+    text_rect.center = (715, 305)
+    screen.blit(text, text_rect)
+    
 
 def calculate_capacitance(val):
     length = len(val)
@@ -212,7 +264,6 @@ while running:
         exit2.handle_event(event)
         dielectric.handle_event(event)
         run.handle_event(event)
-        edit.handle_event(event)
         for element in dlist:
             element.handle_event(event)
         for element in duplicate_dlist:
@@ -222,23 +273,35 @@ while running:
             running = False
         elif play.clicked:
             current_screen = "screen2"
+        elif menu.clicked:
+            current_screen = "screen3"
         elif exit2.clicked:
             current_screen = "screen1"
             duplicate_dlist.clear()
             value.clear()
-            
+            capacitance=0
+            open_smallscreen = False
+            if iter>highscore:
+                highscore=iter
+            iter=0
+
         if dielectric.clicked:
             open_smallscreen = not open_smallscreen
-        if run.clicked and not edit.clicked:
+        if run.clicked :
             open_smallscreen = False
-            capacitance = calculate_capacitance(value)
+            capacitance = round(calculate_capacitance(value),2)
             print(capacitance, "pF")
+            
+                
+            
 
     if current_screen == "screen1":
         draw_screen1()
     elif current_screen == "screen2":
         draw_screen2()
-
+    elif current_screen == "screen3":
+        draw_screen3()
+        
     for index, element in enumerate(duplicate_dlist):
         element.update(pygame.mouse.get_pos())
         xc = [320, 370, 370, 320]
